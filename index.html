@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Digger — dig your own library</title>
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#0a0d0a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Digger" />
+<link rel="apple-touch-icon" href="icons/icon-180.png" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body class="skin-gold">
+
+<!-- ===== email gate / landing ===== -->
+<div id="gate" class="gate hidden">
+  <div class="gate-box">
+    <div class="gate-brand">DIGGER <span>⛏</span></div>
+    <div class="gate-tag">The crate-digging media player for DJs.</div>
+    <ul class="gate-feats">
+      <li>⛏ <b>SNAP mode</b> — auto-preview the best part of every song, then skip. Dig 1,000 tracks in a night.</li>
+      <li>📦 <b>Crates</b> — heart the bangers, export straight to VirtualDJ.</li>
+      <li>🗑 <b>Trash the duds</b> — safely (nothing is ever permanently deleted).</li>
+      <li>🔒 <b>100% private</b> — your music never leaves your computer. Digger runs entirely in your browser.</li>
+    </ul>
+    <form id="gate-form">
+      <input id="gate-name" type="text" placeholder="Your name" autocomplete="name" required />
+      <input id="gate-email" type="email" placeholder="Your email" autocomplete="email" required />
+      <button type="submit">Start Digging Free →</button>
+    </form>
+    <div class="gate-fine">Free beta · Works best in Chrome, Edge, or Brave on a computer</div>
+  </div>
+</div>
+
+<!-- ===== connect-your-folder screen ===== -->
+<div id="connect" class="connect hidden">
+  <div class="connect-box">
+    <div class="gate-brand">DIGGER <span>⛏</span></div>
+    <p class="connect-copy">Point Digger at your music folder — on this computer or an external drive.<br/>
+    Everything stays on your machine. Nothing uploads, ever.</p>
+    <button id="btn-connect" class="connect-btn">📂 Connect your music folder</button>
+    <button id="btn-connect-fallback" class="connect-btn alt hidden">📂 Choose your music folder</button>
+    <div id="connect-note" class="gate-fine"></div>
+  </div>
+</div>
+
+<!-- ===== player ===== -->
+<div id="app" class="hidden">
+  <header class="player">
+    <div class="brand">DIGGER<span>⛏</span></div>
+    <div class="lcd">
+      <div class="lcd-row">
+        <span id="lcd-time">--:-- / --:--</span>
+        <span id="snap-readout" class="snap-readout"></span>
+      </div>
+      <div class="lcd-marquee"><span id="lcd-track">— no track loaded —</span></div>
+      <div class="eq" id="eq">
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+    <div class="seek"><input id="seek" type="range" min="0" max="1000" value="0" step="1" /></div>
+    <div class="controls">
+      <button id="btn-prev" aria-label="Previous" data-tip="Go back to the last song">⏮</button>
+      <button id="btn-play" aria-label="Play or pause" data-tip="Play or pause">▶</button>
+      <button id="btn-next" aria-label="Next" data-tip="Skip to the next song">⏭</button>
+      <button id="btn-shuffle" class="toggle" aria-label="Shuffle" data-tip="Play songs in a random order">SHUF</button>
+      <button id="btn-repeat" class="toggle" aria-label="Repeat" data-tip="Keep repeating this song">REP</button>
+      <div class="vol" data-tip="Volume"><span>VOL</span><input id="volume" type="range" min="0" max="100" value="80" aria-label="Volume" /></div>
+      <button id="btn-refresh" aria-label="Rescan folder" data-tip="Rescan your music folder for new songs">⟳</button>
+    </div>
+    <div class="rack">
+      <div class="rack-group">
+        <button id="btn-snap" class="toggle" aria-label="Snapshot mode" data-tip="Play just the best part, then jump to the next song. Great for digging fast. (S)">SNAP</button>
+        <label class="snap-opt" data-tip="Where the preview starts in the song">SKIP
+          <select id="snap-start" aria-label="Preview start point">
+            <option value="0">0s</option><option value="20">20s</option><option value="30" selected>30s</option>
+            <option value="45">45s</option><option value="meat">Meat ⅓</option>
+          </select>
+        </label>
+        <label class="snap-opt" data-tip="How long each preview plays">PLAY
+          <select id="snap-len" aria-label="Preview length">
+            <option value="20">20s</option><option value="30" selected>30s</option>
+            <option value="60">60s</option><option value="90">90s</option>
+          </select>
+        </label>
+      </div>
+      <div class="rack-group">
+        <button id="btn-keep" aria-label="Add to crate" data-tip="Save this song to your crate (K)">♥ KEEP →</button>
+        <span id="active-crate" class="active-crate" data-tip="The crate you're saving to. Click one on the right to change it.">Digger Finds</span>
+      </div>
+      <div class="rack-group rack-right">
+        <button id="btn-folder" aria-label="Switch folder" data-tip="Connect a different music folder">📂</button>
+        <button id="btn-skin" aria-label="Switch skin" data-tip="Change the look">SKIN: GOLD</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="main">
+  <section class="library">
+    <div class="lib-head">
+      <input id="search" type="text" placeholder="Search your music..." autocomplete="off" />
+      <div class="lib-stats">
+        <span id="count">0</span> tracks
+        <span class="dot">·</span>
+        <span id="filtered">0</span> shown
+        <span id="scan-status" class="scan-status hidden">scanning…</span>
+      </div>
+      <button id="btn-crates" class="btn-crates" aria-label="Open crates" data-tip="Show your crates">📦 CRATES</button>
+    </div>
+    <div class="lib-list" id="list">
+      <div class="row head">
+        <div class="c-idx">#</div><div class="c-title">Title</div><div class="c-artist">Folder</div>
+        <div class="c-dur">Time</div><div class="c-act"></div>
+      </div>
+      <div id="rows"></div>
+    </div>
+  </section>
+
+  <aside class="crates">
+    <div class="crates-head">
+      <span>CRATES</span>
+      <span class="crates-head-btns">
+        <button id="crates-export" aria-label="Export crate" data-tip="Download the active crate as a .m3u playlist for VirtualDJ">⤓ M3U</button>
+        <button id="crates-close" class="crates-close" aria-label="Close crates">✕</button>
+      </span>
+    </div>
+    <div class="crates-hint">drag a track onto a crate →</div>
+    <div id="crate-list" class="crate-list"></div>
+    <div class="crates-new">
+      <input id="new-crate" type="text" placeholder="New crate name…" spellcheck="false" autocomplete="off" />
+      <button id="btn-new-crate" aria-label="Create crate" data-tip="Make a new crate">＋</button>
+    </div>
+  </aside>
+  </div>
+
+  <div id="modal" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-title">Move to Digger Trash?</div>
+      <div class="modal-body" id="modal-body">…</div>
+      <div class="modal-actions">
+        <button id="modal-cancel">Cancel</button>
+        <button id="modal-confirm" class="danger">🗑 Move it</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="crates-backdrop" class="crates-backdrop hidden"></div>
+  <div id="toast-host" class="toast-host"></div>
+  <div id="tip" class="tip hidden" role="tooltip"></div>
+  <audio id="audio" preload="metadata"></audio>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
