@@ -161,15 +161,17 @@
 </div>
 
 <script>
-// Signup capture config. Filled with Dom's Google Form (linked to his Sheet,
-// then Zapier/Kartra automations run off the sheet).
-// window.DIGGER_CAPTURE = {
-//   action: "https://docs.google.com/forms/d/e/<FORM_ID>/formResponse",
-//   fields: {
-//     first: "entry.<ID>", last: "entry.<ID>",
-//     email: "entry.<ID>", phone: "entry.<ID>",
-//   },
-// };
+// Signup capture: gate posts invisibly to Dom's Google Form, which feeds his
+// "Digger" Google Sheet (Kartra automations hang off the sheet via Zapier).
+window.DIGGER_CAPTURE = {
+  action: "https://docs.google.com/forms/d/e/1FAIpQLScnp-6ftOYYpqSBRigX35bl-zeavFRmQLz4Lg_JfdTqy7trDw/formResponse",
+  fields: {
+    first: "entry.2033019206",
+    last: "entry.503034501",
+    email: "entry.1044694026",
+    phone: "entry.697284180",
+  },
+};
 </script>
 <script src="app.js"></script>
 </body>
