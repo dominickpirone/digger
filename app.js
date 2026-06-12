@@ -22,9 +22,10 @@
   const modal = $("modal"), modalBody = $("modal-body"), modalCancel = $("modal-cancel"), modalConfirm = $("modal-confirm");
   const toastHost = $("toast-host"), tipEl = $("tip");
 
-  // Email gate → MailerLite. Filled in at deploy time; if null, signups are
-  // remembered locally and the gate still opens (never block a DJ from music).
-  const ML = window.DIGGER_ML || null;
+  // Email gate → Google Form → Google Sheet (→ Kartra via Zapier later).
+  // If null, signups are remembered locally and the gate still opens
+  // (never block a DJ from music).
+  const CAPTURE = window.DIGGER_CAPTURE || null;
 
   const LS = {
     gate: "dw.gate", skin: "dw.skin", snap: "dw.snap", snapStart: "dw.snapStart",
@@ -130,16 +131,21 @@
   function pastGate() { return !!get(LS.gate, ""); }
   gateForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const name = $("gate-name").value.trim(), email = $("gate-email").value.trim();
-    if (!name || !email) return;
-    set(LS.gate, JSON.stringify({ name, email, at: Date.now() }));
-    if (ML && ML.action) {
+    const lead = {
+      first: $("gate-first").value.trim(),
+      last: $("gate-last").value.trim(),
+      email: $("gate-email").value.trim(),
+      phone: $("gate-phone").value.trim(),   // optional
+    };
+    if (!lead.first || !lead.last || !lead.email) return;
+    set(LS.gate, JSON.stringify({ ...lead, at: Date.now() }));
+    if (CAPTURE && CAPTURE.action && CAPTURE.fields) {
       try {
         const body = new FormData();
-        body.append(ML.nameField || "fields[name]", name);
-        body.append(ML.emailField || "fields[email]", email);
-        if (ML.extra) for (const [k, v] of Object.entries(ML.extra)) body.append(k, v);
-        fetch(ML.action, { method: "POST", body, mode: "no-cors" });
+        for (const [key, field] of Object.entries(CAPTURE.fields)) {
+          if (lead[key]) body.append(field, lead[key]);
+        }
+        fetch(CAPTURE.action, { method: "POST", body, mode: "no-cors" });
       } catch (err) { /* never block entry on a network hiccup */ }
     }
     gate.classList.add("hidden");

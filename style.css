@@ -1383,3 +1383,6 @@ body.skin-serato .wave { background: #0a0b0c; border: 1px solid #2a2e33; }
 
 /* global utility — several elements toggle this */
 .hidden { display: none !important; }
+
+.gate-row { display: flex; gap: 10px; }
+.gate-row input { flex: 1; min-width: 0; }

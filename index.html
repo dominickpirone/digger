@@ -27,8 +27,12 @@
       <li>🔒 <b>100% private</b> — your music never leaves your computer. Digger runs entirely in your browser.</li>
     </ul>
     <form id="gate-form">
-      <input id="gate-name" type="text" placeholder="Your name" autocomplete="name" required />
-      <input id="gate-email" type="email" placeholder="Your email" autocomplete="email" required />
+      <div class="gate-row">
+        <input id="gate-first" type="text" placeholder="First name" autocomplete="given-name" required />
+        <input id="gate-last" type="text" placeholder="Last name" autocomplete="family-name" required />
+      </div>
+      <input id="gate-email" type="email" placeholder="Email" autocomplete="email" required />
+      <input id="gate-phone" type="tel" placeholder="Phone (optional)" autocomplete="tel" />
       <button type="submit">Start Digging Free →</button>
     </form>
     <div class="gate-fine">Free beta · Works best in Chrome, Edge, or Brave on a computer</div>
@@ -157,12 +161,14 @@
 </div>
 
 <script>
-// Signup capture config. Filled with Dom's Google Form so gate signups land in
-// a Google Sheet (then Zapier/Kartra automations run off the sheet).
-// window.DIGGER_ML = {
+// Signup capture config. Filled with Dom's Google Form (linked to his Sheet,
+// then Zapier/Kartra automations run off the sheet).
+// window.DIGGER_CAPTURE = {
 //   action: "https://docs.google.com/forms/d/e/<FORM_ID>/formResponse",
-//   nameField: "entry.<NAME_ID>",
-//   emailField: "entry.<EMAIL_ID>",
+//   fields: {
+//     first: "entry.<ID>", last: "entry.<ID>",
+//     email: "entry.<ID>", phone: "entry.<ID>",
+//   },
 // };
 </script>
 <script src="app.js"></script>
