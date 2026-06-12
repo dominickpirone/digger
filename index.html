@@ -51,6 +51,22 @@
   </div>
 </div>
 
+<!-- ===== which-DJ-software onboarding ===== -->
+<div id="djsoft" class="connect hidden">
+  <div class="connect-box">
+    <div class="gate-brand">DIGGER <span>⛏</span></div>
+    <p class="connect-copy"><b>Which DJ software do you use?</b><br/>
+    Digger tailors how your crates export — it <b>never</b> opens, edits, or even looks at your DJ software's library or database. Crates are plain files <i>you</i> drag in yourself.</p>
+    <div class="dj-options">
+      <button class="dj-opt" data-dj="vdj">🎛 VirtualDJ</button>
+      <button class="dj-opt" data-dj="serato">💿 Serato</button>
+      <button class="dj-opt" data-dj="other">🎚 rekordbox / Traktor / other</button>
+      <button class="dj-opt" data-dj="none">🎧 None — just digging</button>
+    </div>
+    <div class="gate-fine">You can change this anytime with the 🎛 button in the player.</div>
+  </div>
+</div>
+
 <!-- ===== player ===== -->
 <div id="app" class="hidden">
   <header class="player">
@@ -99,6 +115,7 @@
         <span id="active-crate" class="active-crate" data-tip="The crate you're saving to. Click one on the right to change it.">Digger Finds</span>
       </div>
       <div class="rack-group rack-right">
+        <button id="btn-djsoft" aria-label="Change DJ software" data-tip="Change which DJ software your crates export for">🎛</button>
         <button id="btn-folder" aria-label="Switch folder" data-tip="Connect a different music folder">📂</button>
         <button id="btn-skin" aria-label="Switch skin" data-tip="Change the look">SKIN: GOLD</button>
       </div>
@@ -150,6 +167,16 @@
       <div class="modal-actions">
         <button id="modal-cancel">Cancel</button>
         <button id="modal-confirm" class="danger">🗑 Move it</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="coach-modal" class="modal hidden">
+    <div class="modal-box">
+      <div class="modal-title">⛏ First keeper — nice!</div>
+      <div class="modal-body" id="coach-body">…</div>
+      <div class="modal-actions">
+        <button id="coach-ok" class="primary">Got it — keep digging</button>
       </div>
     </div>
   </div>

@@ -1386,3 +1386,13 @@ body.skin-serato .wave { background: #0a0b0c; border: 1px solid #2a2e33; }
 
 .gate-row { display: flex; gap: 10px; }
 .gate-row input { flex: 1; min-width: 0; }
+
+/* ===== DJ-software picker ===== */
+.dj-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 6px 0 14px; }
+.dj-opt {
+  background: #120c04; color: #f2e7c6;
+  border: 1px solid #46340f; border-radius: 8px;
+  padding: 18px 10px; font-size: 14.5px; font-weight: 700; cursor: pointer;
+}
+.dj-opt:hover { border-color: #ffc733; color: #ffd24a; box-shadow: 0 0 14px rgba(255,199,51,0.25); }
+@media (max-width: 520px) { .dj-options { grid-template-columns: 1fr; } }

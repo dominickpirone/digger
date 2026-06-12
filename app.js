@@ -21,6 +21,8 @@
   const btnCrates = $("btn-crates"), cratesClose = $("crates-close"), cratesBackdrop = $("crates-backdrop");
   const modal = $("modal"), modalBody = $("modal-body"), modalCancel = $("modal-cancel"), modalConfirm = $("modal-confirm");
   const toastHost = $("toast-host"), tipEl = $("tip");
+  const djsoftEl = $("djsoft"), btnDjsoft = $("btn-djsoft");
+  const coachModal = $("coach-modal"), coachBody = $("coach-body"), coachOk = $("coach-ok");
 
   // Email gate → Google Form → Google Sheet (→ Kartra via Zapier later).
   // If null, signups are remembered locally and the gate still opens
@@ -31,6 +33,7 @@
     gate: "dw.gate", skin: "dw.skin", snap: "dw.snap", snapStart: "dw.snapStart",
     snapLen: "dw.snapLen", vol: "dw.vol", shuffle: "dw.shuffle", repeat: "dw.repeat",
     crates: "dw.crates", activeCrate: "dw.activeCrate",
+    djsoft: "dw.djsoft", coached: "dw.coached",
   };
   const get = (k, d) => { const v = localStorage.getItem(k); return v === null ? d : v; };
   const set = (k, v) => localStorage.setItem(k, v);
@@ -56,6 +59,8 @@
   const RENDER_CAP = 3000;
   const SKINS = ["modern", "classic", "gold"];
   let skin = get(LS.skin, "gold");
+  let djSoft = get(LS.djsoft, "");   // "vdj" | "serato" | "other" | "none" | "" (not chosen)
+  const DJ_LABELS = { vdj: "VirtualDJ", serato: "Serato", other: "rekordbox / Traktor", none: "no DJ software" };
 
   const fmt = (s) => {
     if (s === null || s === undefined || !isFinite(s) || s <= 0) return "--:--";
@@ -241,7 +246,52 @@
     connectEl.classList.add("hidden");
     gate.classList.add("hidden");
     appEl.classList.remove("hidden");
+    if (!djSoft) showDjPicker();
   }
+
+  // ---------- which-DJ-software onboarding ----------
+  function showDjPicker() { djsoftEl.classList.remove("hidden"); }
+  function setDjSoft(v) {
+    djSoft = v;
+    set(LS.djsoft, v);
+    djsoftEl.classList.add("hidden");
+    updateExportUI();
+    if (v !== "none") toast(`🎛 Set up for ${DJ_LABELS[v]} — crates will export the safe way for it`);
+  }
+  djsoftEl.addEventListener("click", (ev) => {
+    const btn = ev.target.closest(".dj-opt"); if (!btn) return;
+    setDjSoft(btn.dataset.dj);
+  });
+  btnDjsoft.addEventListener("click", showDjPicker);
+
+  function updateExportUI() {
+    if (djSoft === "serato") {
+      cratesExport.textContent = "📁 FOLDER";
+      cratesExport.setAttribute("data-tip", "Copy this crate's songs into a folder you drag into Serato (safest way — Serato's m3u import is unreliable)");
+      btnDjsoft.textContent = "🎛 SERATO";
+    } else {
+      cratesExport.textContent = "⤓ M3U";
+      cratesExport.setAttribute("data-tip",
+        djSoft === "vdj" ? "Save this crate as a playlist into your music folder — VirtualDJ picks it right up"
+        : "Save this crate as a .m3u playlist (works in VirtualDJ, rekordbox, Traktor…)");
+      btnDjsoft.textContent = djSoft === "vdj" ? "🎛 VDJ" : "🎛";
+    }
+  }
+
+  // ---------- first-keeper coaching card ----------
+  const COACH = {
+    vdj: `You hearted a song into <b>{crate}</b>. When you're done digging:<div class="modal-note">1. Click <b>⤓ M3U</b> in the crates panel — Digger saves the playlist <b>right inside your music folder</b>.<br/>2. In VirtualDJ, browse to your music folder and open it. That's it — your database is never touched.</div>`,
+    serato: `You hearted a song into <b>{crate}</b>. When you're done digging:<div class="modal-note">1. Click <b>📁 FOLDER</b> in the crates panel — Digger copies your keepers into <b>_DIGGER CRATES/{crate}</b> inside your music folder.<br/>2. Drag that folder from Finder into Serato's crate panel — it becomes a crate instantly. Your Serato library and database are never touched.</div>`,
+    other: `You hearted a song into <b>{crate}</b>. When you're done digging:<div class="modal-note">1. Click <b>⤓ M3U</b> in the crates panel to save the playlist into your music folder.<br/>2. Import it in your DJ software (rekordbox: Playlist → Import; Traktor: drag it in). Your library database is never touched.</div>`,
+    none: `You hearted a song into <b>{crate}</b>.<div class="modal-note">Your crates live right here in Digger. If you ever get DJ software, hit <b>⤓ M3U</b> to export any crate as a playlist file.</div>`,
+  };
+  function maybeCoach() {
+    if (get(LS.coached, "")) return;
+    set(LS.coached, "1");
+    coachBody.innerHTML = (COACH[djSoft] || COACH.none).replaceAll("{crate}", activeCrate);
+    coachModal.classList.remove("hidden");
+  }
+  coachOk.addEventListener("click", () => coachModal.classList.add("hidden"));
   async function showConnectOrApp() {
     connectEl.classList.remove("hidden");
     if (!fsaSupported) {
@@ -495,17 +545,85 @@
     if (rowEl) { rowEl.classList.add("kept", "is-kept"); setTimeout(() => rowEl.classList.remove("kept"), 700); }
     btnKeep.classList.add("flash"); setTimeout(() => btnKeep.classList.remove("flash"), 450);
     toast(`♥ Added to ${activeCrate}`);
+    maybeCoach();
   }
+  // ---------- crate export (file-based, database-free, per DJ software) ----------
+  const safeName = (s) => s.replace(/[\\/:*?"<>|]+/g, "_").trim() || "Digger Crate";
+
+  async function getHandleByRelPath(rel) {
+    const parts = rel.split("/");
+    let dir = rootDir;
+    for (let i = 0; i < parts.length - 1; i++) dir = await dir.getDirectoryHandle(parts[i]);
+    return dir.getFileHandle(parts[parts.length - 1]);
+  }
+
+  function downloadM3u(items) {
+    const m3u = "#EXTM3U\n# Digger crate — save this file INSIDE your music folder, then open it in your DJ software\n" + items.join("\n") + "\n";
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([m3u], { type: "audio/x-mpegurl" }));
+    a.download = safeName(activeCrate) + ".m3u";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    toast(`⤓ ${safeName(activeCrate)}.m3u downloaded — move it into your music folder, then open it in your DJ software`);
+  }
+
+  async function exportCrateM3u(items) {
+    if (!canWrite || !rootDir) { downloadM3u(items); return; }
+    // write the playlist straight into the music folder — relative paths resolve from there
+    const m3u = "#EXTM3U\n" + items.join("\n") + "\n";
+    try {
+      const fh = await rootDir.getFileHandle(safeName(activeCrate) + ".m3u", { create: true });
+      const w = await fh.createWritable();
+      await w.write(m3u); await w.close();
+      toast(`⤓ Saved “${safeName(activeCrate)}.m3u” into your music folder — ${djSoft === "vdj" ? "open it in VirtualDJ" : "import it in your DJ software"}`);
+    } catch (e) { downloadM3u(items); }
+  }
+
+  async function exportCrateFolder(items) {
+    if (!canWrite || !rootDir) {
+      toast("Folder export needs Chrome/Edge with folder access — downloading a playlist instead.", "warn");
+      downloadM3u(items);
+      return;
+    }
+    const crateName = safeName(activeCrate);
+    cratesExport.disabled = true;
+    try {
+      const base = await rootDir.getDirectoryHandle("_DIGGER CRATES", { create: true });
+      const dest = await base.getDirectoryHandle(crateName, { create: true });
+      let copied = 0, skipped = 0, failed = 0;
+      for (const rel of items) {
+        const fname = rel.split("/").pop();
+        try {
+          let exists = true;
+          try { await dest.getFileHandle(fname); } catch (e) { exists = false; }
+          if (exists) { skipped++; continue; }   // already exported earlier
+          const src = await getHandleByRelPath(rel);
+          const file = await src.getFile();
+          const out = await dest.getFileHandle(fname, { create: true });
+          const w = await out.createWritable();
+          await w.write(file); await w.close();
+          copied++;
+          scanEl.textContent = `copying… ${copied}/${items.length}`;
+          scanEl.classList.remove("hidden");
+        } catch (e) { failed++; }
+      }
+      scanEl.classList.add("hidden");
+      let msg = `📁 “_DIGGER CRATES/${crateName}” is ready (${copied} copied${skipped ? `, ${skipped} already there` : ""}${failed ? `, ${failed} failed` : ""}). `;
+      msg += "Drag that folder from Finder into Serato's crate panel.";
+      toast(msg, failed ? "warn" : "ok");
+    } catch (e) {
+      toast("Folder export failed: " + e.message, "err");
+    } finally {
+      cratesExport.disabled = false;
+      scanEl.classList.add("hidden");
+    }
+  }
+
   function exportCrate() {
     const items = crates[activeCrate] || [];
     if (!items.length) { toast("This crate is empty — heart some songs first.", "warn"); return; }
-    const m3u = "#EXTM3U\n# Digger crate — save this file INSIDE your music folder, then open it in VirtualDJ\n" + items.join("\n") + "\n";
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([m3u], { type: "audio/x-mpegurl" }));
-    a.download = activeCrate + ".m3u";
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-    toast(`⤓ ${activeCrate}.m3u downloaded — move it into your music folder, then open in VirtualDJ`);
+    if (djSoft === "serato") exportCrateFolder(items);
+    else exportCrateM3u(items);
   }
   cratesExport.addEventListener("click", exportCrate);
   btnKeep.addEventListener("click", () => keepTrack(currentTrack(), currentRow()));
@@ -642,7 +760,10 @@
   document.querySelectorAll(".rack-group").forEach((g) => { if (g.contains(snapStartSel)) g.classList.toggle("snap-on", snapOn); });
   activeCrateEl.textContent = activeCrate;
   renderCrates();
+  updateExportUI();
   setupMediaSession();
+  // tiny hook for automated UI tests (harmless: everything here is client-side)
+  window.__diggerTest = { showDjPicker, setDjSoft: (v) => setDjSoft(v), coach: () => { localStorage.removeItem(LS.coached); maybeCoach(); } };
   idb.open().then(() => {
     if (!pastGate()) openGate();
     else showConnectOrApp();
